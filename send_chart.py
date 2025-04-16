@@ -1,50 +1,54 @@
-import asyncio
-from playwright.async_api import async_playwright
-from PIL import Image
-import requests
+from playwright.sync_api import sync_playwright
+import base64
+import time
 import os
+from telegram import Bot
 
-async def capture_chart():
-    print("🔄 Đang mở trang Coinglass...")
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(viewport={"width": 1920, "height": 1080})
-        page = await context.new_page()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-        await page.goto("https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap", timeout=60000)
-        print("⏳ Đợi biểu đồ hiển thị...")
-        await page.wait_for_timeout(10000)  # Chờ 10s cho chắc
+def send_to_telegram(image_path):
+    bot = Bot(token=BOT_TOKEN)
+    with open(image_path, "rb") as f:
+        bot.send_photo(chat_id=CHAT_ID, photo=f, caption="📊 Biểu đồ thanh lý BTC (tự động từ Coinglass)")
 
-        await page.screenshot(path="screenshot.png", full_page=True)
-        await browser.close()
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    page = browser.new_page()
+    print("🔄 Đang truy cập trang Coinglass...")
 
-    # Crop theo tọa độ cố định (đã đo chuẩn tay từ ảnh mẫu)
-    print("✂️ Đang crop ảnh...")
-    image = Image.open("screenshot.png")
-    left = 120
-    top = 280
-    right = 1820
-    bottom = 950
-    chart = image.crop((left, top, right, bottom))
-    chart.save("chart.png")
-    print("✅ Đã lưu ảnh chart.png")
+    # Truy cập trang biểu đồ
+    page.goto("https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap", timeout=60000)
+    page.wait_for_timeout(10000)  # Đợi toàn bộ trang load
 
-def send_telegram():
-    print("📤 Gửi ảnh về Telegram...")
-    TOKEN = os.environ["BOT_TOKEN"]
-    CHAT_ID = os.environ["CHAT_ID"]
+    print("📸 Đang cố gắng chụp ảnh qua UI của Coinglass...")
 
-    with open("chart.png", "rb") as photo:
-        res = requests.post(
-            f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
-            data={"chat_id": CHAT_ID, "caption": "🔥 Biểu đồ thanh lý BTC từ Coinglass"},
-            files={"photo": photo}
-        )
-    print(f"✅ Đã gửi: {res.status_code}, {res.text}")
+    # Giả sử nút snapshot có class hoặc text cụ thể (cần kiểm tra cụ thể lại nếu Coinglass có thay đổi)
+    # Đây là ví dụ chọn nút có chữ 'Snapshot' (hoặc icon tương ứng)
+    snapshot_btn = page.locator("text=Snapshot")
+    if snapshot_btn:
+        snapshot_btn.click()
+        print("🖼 Đã click nút chụp ảnh")
+    else:
+        print("❌ Không tìm thấy nút Snapshot")
+        exit(1)
 
-async def main():
-    await capture_chart()
-    send_telegram()
+    # Đợi ảnh được tạo (thường ảnh sẽ render sau vài giây)
+    page.wait_for_timeout(5000)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    # Tìm thẻ chứa ảnh base64 (Coinglass dùng canvas -> img)
+    img_element = page.query_selector("img[src^='data:image/png;base64']")
+
+    if img_element:
+        img_base64 = img_element.get_attribute("src").split(",")[1]
+        image_data = base64.b64decode(img_base64)
+        with open("chart.png", "wb") as f:
+            f.write(image_data)
+        print("✅ Đã lưu ảnh về local!")
+
+        # Gửi Telegram
+        send_to_telegram("chart.png")
+    else:
+        print("❌ Không tìm thấy ảnh base64!")
+
+    browser.close()
