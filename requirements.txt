@@ -2,3 +2,4 @@ requests
 playwright
 selenium
 pillow
+pip install selenium webdriver-manager
