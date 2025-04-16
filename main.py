@@ -1,8 +1,10 @@
 import requests
 
 # Cấu hình Telegram
-BOT_TOKEN = "7424883795:AAEYhQX61gfReKem4AT13--hgxs7ZUOnXSY"
-CHAT_ID = "-4631355369"
+import os
+
+TOKEN = os.environ["BOT_TOKEN"]
+CHAT_ID = os.environ["CHAT_ID"]
 
 # API chụp màn hình miễn phí
 IMG_URL = 'https://image.thum.io/get/width/1920/https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap'
