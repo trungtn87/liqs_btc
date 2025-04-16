@@ -1,69 +1,68 @@
 import os
-import asyncio
-from pathlib import Path
+import time
 import requests
-from playwright.async_api import async_playwright
+import glob
+from playwright.sync_api import sync_playwright
 
-# === CONFIG ===
-COINGLASS_URL = "https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap"
-DOWNLOAD_DIR = Path("./screenshots")
-TELEGRAM_BOT_TOKEN = "your_telegram_bot_token"
-TELEGRAM_CHAT_ID = "your_chat_id"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
+def send_to_telegram(photo_path):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
+    with open(photo_path, "rb") as photo:
+        response = requests.post(url, data={"chat_id": CHAT_ID}, files={"photo": photo})
+    if response.status_code == 200:
+        print("✅ Ảnh đã được gửi thành công!")
+    else:
+        print(f"❌ Gửi ảnh thất bại: {response.status_code}, {response.text}")
 
-async def capture_chart_and_send():
-    DOWNLOAD_DIR.mkdir(exist_ok=True)
+def main():
+    print("🔄 Đang mở trang Coinglass...")
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(accept_downloads=True)
-        page = await context.new_page()
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(accept_downloads=True)
+        page = context.new_page()
 
-        print("🔄 Đang mở trang Coinglass...")
-        await page.goto(COINGLASS_URL)
-        await page.wait_for_timeout(5000)
+        page.goto("https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap", timeout=60000)
+        page.wait_for_timeout(8000)
 
         print("📸 Tìm và nhấn nút chụp ảnh SVG...")
-        buttons = await page.query_selector_all("button")
-        download = None
-        for btn in buttons:
-            inner_html = await btn.inner_html()
-            if "<svg" in inner_html.lower():
-                try:
-                    # Nhấn thử nút SVG
-                    async with page.expect_download(timeout=10000) as download_info:
-                        await btn.click()
-                    download = await download_info.value
-                    break
-                except:
-                    continue
 
-        if not download:
-            print("❌ Không tìm thấy nút chụp ảnh hoặc không thể click.")
-            await browser.close()
+        try:
+            # Tìm tất cả nút SVG, click vào nút có tooltip là "Ảnh chụp màn hình"
+            buttons = page.query_selector_all("button")
+            found = False
+            for button in buttons:
+                title = button.get_attribute("aria-label")
+                if title and ("chụp" in title.lower() or "screenshot" in title.lower()):
+                    with page.expect_download() as download_info:
+                        button.click()
+                    download = download_info.value
+                    download_path = "screenshots/chart.png"
+                    download.save_as(download_path)
+                    print("⬇️ Đã tải ảnh về:", download_path)
+                    found = True
+                    break
+
+            if not found:
+                print("❌ Không tìm thấy nút chụp ảnh hoặc không thể click.")
+                return
+
+        except Exception as e:
+            print("❌ Lỗi khi tải ảnh:", e)
             return
 
-        print("⬇️ Đang tải ảnh về...")
-        file_path = DOWNLOAD_DIR / "chart.png"
-        await download.save_as(file_path)
+        browser.close()
 
-        print(f"📤 Gửi ảnh {file_path} lên Telegram...")
-        with open(file_path, "rb") as img:
-            response = requests.post(
-                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto",
-                data={"chat_id": TELEGRAM_CHAT_ID},
-                files={"photo": img}
-            )
+    print("📤 Gửi ảnh screenshots/chart.png lên Telegram...")
+    send_to_telegram("screenshots/chart.png")
 
-        if response.status_code == 200:
-            print("✅ Đã gửi thành công!")
-            os.remove(file_path)
-            print("🗑️ Đã xoá ảnh.")
-        else:
-            print(f"❌ Gửi ảnh thất bại: {response.status_code}, {response.text}")
-
-        await browser.close()
-
+    try:
+        os.remove("screenshots/chart.png")
+        print("🧹 Đã xoá ảnh sau khi gửi.")
+    except:
+        print("⚠️ Không thể xoá ảnh.")
 
 if __name__ == "__main__":
-    asyncio.run(capture_chart_and_send())
+    main()
