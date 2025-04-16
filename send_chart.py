@@ -10,7 +10,7 @@ def send_to_telegram(file_path):
     with open(file_path, 'rb') as photo:
         response = requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
-            data={"chat_id": CHAT_ID, "caption": "📊 Biểu đồ thanh lý BTC từ Coinglass"},
+            data={"chat_id": CHAT_ID, "caption": "📊 Biểu đồ thanh lý BTC 24h"},
             files={"photo": photo}
         )
     print(response.text)
