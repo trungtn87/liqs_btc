@@ -2,7 +2,7 @@ name: Send BTC Chart to Telegram
 
 on:
   schedule:
-    - cron: '0 */8 * * *'  # Mỗi 12 tiếng
+    - cron: '0 */8 * * *'  # Mỗi 8 tiếng
   workflow_dispatch:
 
 jobs:
@@ -20,10 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          playwright install --with-deps  # 👉 Cài trình duyệt cho playwright
-
-      - name: Install Playwright Browsers
-        run: playwright install --with-deps
+          playwright install --with-deps  # ✅ Cài trình duyệt 1 lần duy nhất
 
       - name: Run script
         env:
