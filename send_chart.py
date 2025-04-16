@@ -18,8 +18,11 @@ with sync_playwright() as p:
 
 # Gửi ảnh lên Telegram
 with open(screenshot_path, 'rb') as photo:
-    requests.post(
+    response = requests.post(
         f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
         data={"chat_id": CHAT_ID, "caption": "Biểu đồ thanh lý BTC từ Coinglass 📉"},
         files={"photo": photo}
     )
+    print("Status code:", response.status_code)
+    print("Response:", response.text)
+
