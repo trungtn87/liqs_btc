@@ -23,14 +23,17 @@ async def capture_chart_and_send():
         await page.goto(COINGLASS_URL)
         await page.wait_for_timeout(5000)
 
-        print("📸 Tìm và nhấn nút chụp ảnh...")
+        print("📸 Tìm và nhấn nút chụp ảnh SVG...")
         buttons = await page.query_selector_all("button")
         download = None
         for btn in buttons:
-            html = await btn.inner_html()
-            if "svg" in html.lower():
+            inner_html = await btn.inner_html()
+            if "<svg" in inner_html.lower():
                 try:
-                    download = await btn.click(timeout=2000)
+                    # Nhấn thử nút SVG
+                    async with page.expect_download(timeout=10000) as download_info:
+                        await btn.click()
+                    download = await download_info.value
                     break
                 except:
                     continue
@@ -41,9 +44,8 @@ async def capture_chart_and_send():
             return
 
         print("⬇️ Đang tải ảnh về...")
-        download_obj = await page.wait_for_event("download", timeout=10000)
         file_path = DOWNLOAD_DIR / "chart.png"
-        await download_obj.save_as(file_path)
+        await download.save_as(file_path)
 
         print(f"📤 Gửi ảnh {file_path} lên Telegram...")
         with open(file_path, "rb") as img:
@@ -63,6 +65,5 @@ async def capture_chart_and_send():
         await browser.close()
 
 
-# Run script
 if __name__ == "__main__":
     asyncio.run(capture_chart_and_send())
