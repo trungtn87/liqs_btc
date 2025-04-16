@@ -1,52 +1,39 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
+from playwright.sync_api import sync_playwright
 from PIL import Image
-import time
+import requests
+import os
 
-# Cấu hình Chrome headless
-options = Options()
-options.add_argument('--headless')
-options.add_argument('--no-sandbox')
-options.add_argument('--disable-dev-shm-usage')
-options.add_argument("--window-size=1920,1080")
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+CHAT_ID = os.environ["CHAT_ID"]
 
-# Mở trình duyệt
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    page = browser.new_page(viewport={"width": 1920, "height": 1080})
+    page.goto("https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap", timeout=60000)
+    
+    # Chờ biểu đồ xuất hiện
+    page.wait_for_selector(".heat-chart-container", timeout=30000)
 
-# Mở trang biểu đồ Coinglass
-driver.get("https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap")
+    # Chụp toàn màn hình
+    page.screenshot(path="full.png")
 
-# Đợi trang load đầy đủ (tùy tốc độ mạng, có thể tăng lên 10-15s)
-time.sleep(10)
+    # Lấy vị trí và kích thước biểu đồ
+    box = page.locator(".heat-chart-container").bounding_box()
+    if box:
+        image = Image.open("full.png")
+        cropped = image.crop((box["x"], box["y"], box["x"] + box["width"], box["y"] + box["height"]))
+        cropped.save("chart.png")
+        print("✅ Đã lưu chart.png")
 
-# Tìm phần biểu đồ bằng class
-try:
-    chart_element = driver.find_element(By.CLASS_NAME, "heat-chart-container")  # <- class của biểu đồ
-except:
-    print("Không tìm thấy biểu đồ!")
-    driver.quit()
-    exit()
+        # Gửi Telegram
+        with open("chart.png", "rb") as photo:
+            response = requests.post(
+                f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
+                data={"chat_id": CHAT_ID, "caption": "📉 Biểu đồ thanh lý BTC"},
+                files={"photo": photo}
+            )
+            print(response.status_code, response.text)
+    else:
+        print("❌ Không tìm thấy biểu đồ.")
 
-# Chụp toàn bộ màn hình
-driver.save_screenshot("full_screenshot.png")
-
-# Lấy vị trí và kích thước của biểu đồ
-location = chart_element.location
-size = chart_element.size
-
-# Crop lại phần biểu đồ từ ảnh chụp màn hình
-image = Image.open("full_screenshot.png")
-left = location['x']
-top = location['y']
-right = location['x'] + size['width']
-bottom = location['y'] + size['height']
-
-chart_image = image.crop((left, top, right, bottom))
-chart_image.save("chart.png")
-
-print("✅ Đã lưu ảnh biểu đồ thành chart.png")
-
-driver.quit()
+    browser.close()
