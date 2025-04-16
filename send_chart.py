@@ -19,9 +19,9 @@ with sync_playwright() as p:
 image = Image.open("screenshot.png")
 # Tùy chỉnh nếu layout trang thay đổi
 left = 250
-top = 120
-right = 1630
-bottom = 930
+top = 270
+right = 1670
+bottom = 900
 
 chart = image.crop((left, top, right, bottom))
 chart.save("chart.png")
