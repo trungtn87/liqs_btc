@@ -3,48 +3,70 @@ from playwright.sync_api import sync_playwright
 import requests
 import os
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+TELEGRAM_BOT_TOKEN = os.environ.get("BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("CHAT_ID")
 
-def send_to_telegram(file_path):
-    with open(file_path, 'rb') as photo:
-        response = requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
-            data={"chat_id": CHAT_ID, "caption": "📊 Biểu đồ thanh lý BTC 24h"},
-            files={"photo": photo}
-        )
-    print(response.text)
+def send_photo_to_telegram(image_path):
+    print("📤 Đang gửi ảnh đến Telegram...")
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
+    with open(image_path, "rb") as img:
+        files = {"photo": img}
+        data = {"chat_id": TELEGRAM_CHAT_ID}
+        response = requests.post(url, files=files, data=data)
+        print(f"🔁 Status code: {response.status_code}")
+        print(f"📦 Response text: {response.text}")
+        return response.status_code == 200
 
-def capture_coinglass_screenshot():
+def main():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(viewport={"width": 1920, "height": 1080})
-        page = context.new_page()
         print("🔄 Đang mở trang Coinglass...")
-
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1920, "height": 1080})
         page.goto("https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap", timeout=60000)
-        page.wait_for_timeout(10000)
+        page.wait_for_timeout(8000)  # đợi page render biểu đồ và nút chụp
 
-        print("📸 Tìm và nhấn nút chụp ảnh...")
-        screenshot_btn = page.query_selector("canvas ~ div button")  # Nút chụp ảnh gần canvas
-        if screenshot_btn:
-            screenshot_btn.click()
-            page.wait_for_timeout(3000)
+        print("📸 Tìm và nhấn nút có biểu tượng...")
 
-            print("📥 Tải ảnh từ browser context...")
-            with page.expect_download() as download_info:
-                page.locator("text=Tải về").click()
-            download = download_info.value
-            path = download.path()
-            file_path = "chart.png"
-            download.save_as(file_path)
-            print(f"✅ Ảnh đã tải về: {file_path}")
-            return file_path
-        else:
-            print("❌ Không tìm thấy nút chụp ảnh")
-            return None
+        # Tìm tất cả nút, nhấn nút có SVG đầu tiên
+        buttons = page.locator("div button")
+        clicked = False
+        for i in range(buttons.count()):
+            btn = buttons.nth(i)
+            if btn.locator("svg").count() > 0:
+                btn.click()
+                clicked = True
+                print("✅ Đã nhấn nút chụp ảnh.")
+                break
+
+        if not clicked:
+            print("❌ Không tìm thấy nút chụp ảnh có svg.")
+            browser.close()
+            return
+
+        page.wait_for_timeout(5000)  # Đợi ảnh render xong
+
+        # Tìm thẻ ảnh sau khi nhấn nút
+        print("🔍 Đang tìm ảnh đã render...")
+        try:
+            img_element = page.locator("img").first
+            img_url = img_element.get_attribute("src")
+            if img_url.startswith("data:image"):
+                print("❌ Ảnh render dạng base64, không tải được.")
+                return
+            print(f"🌐 URL ảnh: {img_url}")
+
+            # Tải ảnh về
+            img_data = requests.get(img_url).content
+            with open("chart.png", "wb") as f:
+                f.write(img_data)
+            print("✅ Đã lưu ảnh thành chart.png")
+
+            # Gửi Telegram
+            send_photo_to_telegram("chart.png")
+        except Exception as e:
+            print("❌ Không tìm thấy ảnh hoặc lỗi khi tải ảnh:", e)
+
+        browser.close()
 
 if __name__ == "__main__":
-    image_file = capture_coinglass_screenshot()
-    if image_file:
-        send_to_telegram(image_file)
+    main()
