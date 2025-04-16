@@ -18,10 +18,10 @@ with sync_playwright() as p:
 # 📏 Crop theo tọa độ cố định (đã test ổn trên máy và CI)
 image = Image.open("screenshot.png")
 # Tùy chỉnh nếu layout trang thay đổi
-left = 300
-top = 200
-right = 1620
-bottom = 880
+left = 250
+top = 120
+right = 1630
+bottom = 930
 
 chart = image.crop((left, top, right, bottom))
 chart.save("chart.png")
