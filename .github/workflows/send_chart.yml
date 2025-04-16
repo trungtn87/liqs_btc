@@ -2,8 +2,8 @@ name: Send BTC Chart to Telegram
 
 on:
   schedule:
-    - cron: '0 */12 * * *' # Mỗi 12 tiếng
-  workflow_dispatch: # Cho phép chạy thủ công
+    - cron: '0 */12 * * *'  # Mỗi 12 tiếng
+  workflow_dispatch:
 
 jobs:
   send-chart:
@@ -12,14 +12,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-          architecture: 'x64'
 
-      - name: Install deps
-        run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps  # 👉 Cài trình duyệt cho playwright
 
       - name: Run script
         env:
