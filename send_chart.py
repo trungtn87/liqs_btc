@@ -1,19 +1,25 @@
+import os
 import requests
+from playwright.sync_api import sync_playwright
 
-BOT_TOKEN = "7424883795:AAEYhQX61gfReKem4AT13--hgxs7ZUOnXSY"
-CHAT_ID = "-4631355369"
+TOKEN = os.environ["BOT_TOKEN"]
+CHAT_ID = os.environ["CHAT_ID"]
 
-IMG_URL = 'https://image.thum.io/get/width/1920/https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap'
+url = "https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap"
+screenshot_path = "btc_chart.png"
 
-# Tải ảnh
-img = requests.get(IMG_URL).content
-with open('btc.png', 'wb') as f:
-    f.write(img)
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto(url, timeout=60000)
+    page.wait_for_timeout(8000)  # đợi biểu đồ load
+    page.screenshot(path=screenshot_path, full_page=True)
+    browser.close()
 
-# Gửi ảnh qua Telegram
-with open('btc.png', 'rb') as f:
+# Gửi ảnh lên Telegram
+with open(screenshot_path, 'rb') as photo:
     requests.post(
-        f'https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto',
-        data={'chat_id': CHAT_ID, 'caption': 'Biểu đồ thanh lý BTC từ Coinglass'},
-        files={'photo': f}
+        f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
+        data={"chat_id": CHAT_ID, "caption": "Biểu đồ thanh lý BTC từ Coinglass 📉"},
+        files={"photo": photo}
     )
