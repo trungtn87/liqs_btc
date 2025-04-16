@@ -17,6 +17,6 @@ with open('btc_chart.png', 'wb') as handler:
 with open('btc_chart.png', 'rb') as photo:
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
-        data={"chat_id": CHAT_ID, "caption": "📊 Biểu đồ thanh lý BTC từ Coinglass"},
+        data={"chat_id": CHAT_ID, "caption": "📊 Biểu đồ thanh lý BTC"},
         files={"photo": photo}
     )
