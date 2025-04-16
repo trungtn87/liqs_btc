@@ -1,37 +1,52 @@
-import os
-import requests
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+from PIL import Image
+import time
 
-TOKEN = os.environ["BOT_TOKEN"]
-CHAT_ID = os.environ["CHAT_ID"]
+# Cấu hình Chrome headless
+options = Options()
+options.add_argument('--headless')
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
+options.add_argument("--window-size=1920,1080")
 
-url = "https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap"
-screenshot_path = "btc_chart.png"
+# Mở trình duyệt
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page()
-    page.goto(url, timeout=60000)
-    page.wait_for_timeout(8000)
-    page.screenshot(path=screenshot_path, full_page=True)
-    browser.close()
+# Mở trang biểu đồ Coinglass
+driver.get("https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap")
 
-print("✅ Screenshot captured.")
+# Đợi trang load đầy đủ (tùy tốc độ mạng, có thể tăng lên 10-15s)
+time.sleep(10)
 
-# Kiểm tra file đã tồn tại chưa và dung lượng
-if not os.path.exists(screenshot_path):
-    print("❌ Lỗi: File ảnh không tồn tại.")
-else:
-    print("📸 File ảnh tồn tại.")
-    print("📏 Kích thước:", os.path.getsize(screenshot_path), "bytes")
+# Tìm phần biểu đồ bằng class
+try:
+    chart_element = driver.find_element(By.CLASS_NAME, "heat-chart-container")  # <- class của biểu đồ
+except:
+    print("Không tìm thấy biểu đồ!")
+    driver.quit()
+    exit()
 
-    with open(screenshot_path, 'rb') as photo:
-        response = requests.post(
-            f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
-            data={"chat_id": CHAT_ID, "caption": "Biểu đồ thanh lý BTC từ Coinglass 📉"},
-            files={"photo": photo}
-        )
+# Chụp toàn bộ màn hình
+driver.save_screenshot("full_screenshot.png")
 
-        print("📤 Đang gửi ảnh đến Telegram...")
-        print("🔁 Status code:", response.status_code)
-        print("📦 Response text:", response.text)
+# Lấy vị trí và kích thước của biểu đồ
+location = chart_element.location
+size = chart_element.size
+
+# Crop lại phần biểu đồ từ ảnh chụp màn hình
+image = Image.open("full_screenshot.png")
+left = location['x']
+top = location['y']
+right = location['x'] + size['width']
+bottom = location['y'] + size['height']
+
+chart_image = image.crop((left, top, right, bottom))
+chart_image.save("chart.png")
+
+print("✅ Đã lưu ảnh biểu đồ thành chart.png")
+
+driver.quit()
