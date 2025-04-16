@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          playwright install --with-deps  # ✅ Cài trình duyệt 1 lần duy nhất
+          playwright install --with-deps
 
       - name: Run script
         env:
