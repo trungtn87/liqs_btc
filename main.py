@@ -1,15 +1,14 @@
 import requests
-
-# Cấu hình Telegram
 import os
 
-TOKEN = os.environ["BOT_TOKEN"]
+# Lấy token và chat ID từ biến môi trường GitHub Actions
+BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-# API chụp màn hình miễn phí
+# URL chụp màn hình biểu đồ
 IMG_URL = 'https://image.thum.io/get/width/1920/https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap'
 
-# Tải ảnh từ API
+# Tải ảnh về
 img_data = requests.get(IMG_URL).content
 with open('btc_chart.png', 'wb') as handler:
     handler.write(img_data)
@@ -18,6 +17,6 @@ with open('btc_chart.png', 'wb') as handler:
 with open('btc_chart.png', 'rb') as photo:
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
-        data={"chat_id": CHAT_ID, "caption": "Biểu đồ thanh lý BTC từ Coinglass 📉"},
+        data={"chat_id": CHAT_ID, "caption": "📊 Biểu đồ thanh lý BTC từ Coinglass"},
         files={"photo": photo}
     )
