@@ -33,7 +33,7 @@ import requests
 with open("chart.png", "rb") as photo:
     res = requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
-        data={"chat_id": CHAT_ID, "caption": "📉 Biểu đồ thanh lý BTC từ Coinglass"},
+        data={"chat_id": CHAT_ID, "caption": "📉 Biểu đồ thanh lý BTC 24h"},
         files={"photo": photo}
     )
     print("📤 Gửi ảnh:", res.status_code, res.text)
