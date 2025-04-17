@@ -2,7 +2,7 @@ name: Send BTC Chart to Telegram
 
 on:
   schedule:
-    - cron: '0 */8 * * *'  # Chạy mỗi 8 tiếng
+    - cron: '0 1,9,16 * * *'  # Chạy mỗi 8 tiếng
   workflow_dispatch:
 
 jobs:
