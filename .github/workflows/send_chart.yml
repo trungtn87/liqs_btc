@@ -5,6 +5,7 @@ import requests
 from playwright.async_api import async_playwright
 
 # === CONFIG ===
+# === CONFIG ===
 COINGLASS_URL = "https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap"
 DOWNLOAD_DIR = Path("./screenshots")
 TELEGRAM_BOT_TOKEN = os.getenv("BOT_TOKEN")
