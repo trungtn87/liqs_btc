@@ -21,6 +21,24 @@ async def capture_chart_and_send():
 
         print("🔄 Đang mở trang Coinglass...")
         await page.goto(COINGLASS_URL)
+        # Đợi trang load phần nút "Cặp" và "Ký hiệu"
+await page.wait_for_selector("button", timeout=10000)
+
+# Tìm tất cả các nút
+buttons = await page.query_selector_all("button")
+
+# Tìm nút có text là "Ký hiệu"
+for btn in buttons:
+    try:
+        text = await btn.inner_text()
+        if text.strip().lower() == "ký hiệu":
+            print("🔁 Đang click nút 'Ký hiệu'...")
+            await btn.click()
+            await page.wait_for_timeout(2000)  # chờ load dữ liệu
+            break
+    except:
+        continue
+
         await page.wait_for_timeout(5000)
 
         print("📸 Tìm và nhấn nút chụp ảnh SVG...")
