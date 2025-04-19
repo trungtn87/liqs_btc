@@ -1,5 +1,4 @@
-python-telegram-bot[webhooks]==20.7
-python-dotenv
-aiohttp
-playwright[chromium]
-requests
+python-telegram-bot==20.7
+playwright==1.43.0
+python-dotenv==1.0.1
+requests==2.31.0
