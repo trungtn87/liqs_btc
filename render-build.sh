@@ -21,8 +21,9 @@ apt-get update && apt-get install -y \
     xdg-utils \
     --no-install-recommends
 
-# Cài gói Python
+#!/usr/bin/env bash
 pip install -r requirements.txt
 
-# Cài browser cho Playwright
-playwright install --with-deps
+# Ép Playwright cài browser
+python -m playwright install --with-deps
+
