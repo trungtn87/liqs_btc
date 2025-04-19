@@ -8,7 +8,7 @@ from playwright.async_api import async_playwright
 COINGLASS_URL = "https://www.coinglass.com/vi/pro/futures/LiquidationHeatMap"
 DOWNLOAD_DIR = Path("./screenshots")
 TELEGRAM_BOT_TOKEN = os.getenv("BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("CHAT_ID") 
+TELEGRAM_CHAT_ID = os.getenv("CHAT_ID")
 
 
 async def capture_chart_and_send():
@@ -23,6 +23,23 @@ async def capture_chart_and_send():
         await page.goto(COINGLASS_URL)
         await page.wait_for_timeout(5000)
 
+        # Click nút "Ký hiệu"
+        try:
+            print("🔁 Đang tìm nút 'Ký hiệu'...")
+            await page.wait_for_selector("button", timeout=10000)
+            symbol_button = await page.locator("button", has_text="Ký hiệu").first
+            if await symbol_button.is_visible():
+                print("🟢 Nhấn nút 'Ký hiệu'...")
+                await symbol_button.click()
+                await page.wait_for_timeout(3000)
+            else:
+                print("⚠️ Không tìm thấy nút 'Ký hiệu'")
+        except Exception as e:
+            print(f"❌ Lỗi khi nhấn 'Ký hiệu': {e}")
+            await browser.close()
+            return
+
+        # Tìm và nhấn nút SVG (chụp ảnh)
         print("📸 Tìm và nhấn nút chụp ảnh SVG...")
         buttons = await page.query_selector_all("button")
         download = None
@@ -30,7 +47,6 @@ async def capture_chart_and_send():
             inner_html = await btn.inner_html()
             if "<svg" in inner_html.lower():
                 try:
-                    # Nhấn thử nút SVG
                     async with page.expect_download(timeout=10000) as download_info:
                         await btn.click()
                     download = await download_info.value
