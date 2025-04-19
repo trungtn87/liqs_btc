@@ -22,8 +22,9 @@ apt-get update && apt-get install -y \
     --no-install-recommends
 
 #!/usr/bin/env bash
+# Cài thư viện cần thiết
 pip install -r requirements.txt
 
-# Ép Playwright cài browser
-python -m playwright install --with-deps
+# Cài browser cho Playwright (cách chắc chắn)
+python -m playwright install chromium
 
