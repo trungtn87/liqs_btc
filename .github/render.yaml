@@ -3,7 +3,8 @@ services:
     name: liqs_btc
     env: python
     buildCommand: |
-    pip install -r requirements.txt
+      pip install -r requirements.txt
+      python -m playwright install
     startCommand: "python telegram_bot.py"
     envVars:
       - key: BOT_TOKEN
