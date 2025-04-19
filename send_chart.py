@@ -24,15 +24,15 @@ async def capture_chart_and_send():
         await page.wait_for_timeout(5000)
 
         # Click nút "Ký hiệu"
-            print("🔁 Đang tìm nút 'Ký hiệu'...")
-            await page.wait_for_selector("button", timeout=10000)
-            symbol_button = page.locator("button", has_text="Ký hiệu").first
-            if await symbol_button.is_visible():  # Đây là nơi bạn gọi await
-                print("🟢 Nhấn nút 'Ký hiệu'...")
-                await symbol_button.click()
-                await page.wait_for_timeout(3000)
-            else:
-                print("⚠️ Không tìm thấy nút 'Ký hiệu'")
+        print("🔁 Đang tìm nút 'Ký hiệu'...")
+        await page.wait_for_selector("button", timeout=10000)
+        symbol_button = page.locator("button", has_text="Ký hiệu").first
+        if await symbol_button.is_visible():  # Đây là nơi bạn gọi await
+            print("🟢 Nhấn nút 'Ký hiệu'...")
+            await symbol_button.click()
+            await page.wait_for_timeout(3000)
+        else:
+            print("⚠️ Không tìm thấy nút 'Ký hiệu'")
 
         # Tìm và nhấn nút SVG (chụp ảnh)
         print("📸 Tìm và nhấn nút chụp ảnh SVG...")
