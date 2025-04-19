@@ -1,27 +1,27 @@
+import os
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-import subprocess
-import os
+from send_chart import capture_chart_and_send  # 👈 import từ file bạn đã viết
+from dotenv import load_dotenv
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # hoặc gõ thẳng token ở đây
-CHART_SCRIPT_PATH = "send_chart.py"
+load_dotenv()
 
-async def chart_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("⏳ Đang tạo ảnh từ Coinglass, xin chờ...")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-    try:
-        # Gọi script chụp ảnh và gửi Telegram
-        subprocess.run(["python3", CHART_SCRIPT_PATH], check=True)
-    except subprocess.CalledProcessError as e:
-        await update.message.reply_text(f"❌ Lỗi khi chạy script: {e}")
-    except Exception as e:
-        await update.message.reply_text(f"⚠️ Có lỗi xảy ra: {e}")
 
-    # Không cần gửi ảnh trong bot này, vì ảnh đã được gửi trong script rồi
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Chào bạn! Gửi /chart để nhận ảnh nhé.")
 
-if __name__ == "__main__":
+
+async def chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📸 Đang xử lý, đợi tí nhé...")
+    await capture_chart_and_send()  # 👈 gọi hàm chụp ảnh
+    await update.message.reply_text("✅ Ảnh đã được gửi!")
+
+if __name__ == '__main__':
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("chart", chart_handler))
-
-    print("🤖 Bot Telegram đã sẵn sàng...")
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("chart", chart))
+    print("🤖 Bot Telegram đang chạy...")
     app.run_polling()
