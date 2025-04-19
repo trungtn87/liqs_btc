@@ -1,9 +1,15 @@
 services:
   - type: web
-    name: telegram-bot
+    name: liqs_btc
     env: python
+    plan: free
+    region: oregon
     buildCommand: |
       pip install -r requirements.txt
       playwright install
     startCommand: python telegram_bot.py
-    autoDeploy: true
+    envVars:
+      - key: BOT_TOKEN
+        fromSecret: BOT_TOKEN
+      - key: CHAT_ID
+        fromSecret: CHAT_ID
